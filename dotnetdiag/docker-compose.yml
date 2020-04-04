@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  app:
+    image: docker.pkg.github.com/phoenix-chen-2016/netcoremonitorexample/sampleweb:latest
+    volumes:
+      - dotnetdiag:/tmp:rw
+  # diag:
+  #   image: docker.pkg.github.com/phoenix-chen-2016/netcoremonitorexample/dotnetdiag:3.1
+  #   volumes:
+  #     - dotnetdiag:/tmp:rw
+  #   pid: service:app
+volumes:
+  dotnetdiag:

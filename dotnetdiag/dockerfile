@@ -1,0 +1,6 @@
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1
+RUN mkdir /root/.dotnet/tools
+ENV PATH="/root/.dotnet/tools:${PATH}"
+RUN  dotnet tool install dotnet-counters --global
+WORKDIR /diagnostics
+ENTRYPOINT [ "/bin/bash" ]
