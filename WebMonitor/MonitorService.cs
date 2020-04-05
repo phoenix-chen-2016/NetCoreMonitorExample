@@ -23,16 +23,24 @@ namespace WebMonitor
 
 			var pid = 1;
 			var client = new DiagnosticsClient(pid);
+
+			var providerArguments = new Dictionary<string, string>
+			{
+				["EventCounterIntervalSec"] = "10"
+			};
+
 			var provider = new EventPipeProvider(
 				"System.Runtime",
 				System.Diagnostics.Tracing.EventLevel.Verbose,
 				0xffffffff,
-				new Dictionary<string, string>
-				{
-					["EventCounterIntervalSec"] = "10"
-				});
+				providerArguments);
+			var customEventProvider = new EventPipeProvider(
+				"Sample",
+				System.Diagnostics.Tracing.EventLevel.Verbose,
+				0xffffffff,
+				providerArguments);
 
-			var session = client.StartEventPipeSession(new[] { provider });
+			var session = client.StartEventPipeSession(new[] { provider, customEventProvider });
 
 			m_EventSource = new EventPipeEventSource(session.EventStream);
 
@@ -57,13 +65,11 @@ namespace WebMonitor
 
 		private Gauge GetGauge(string name, string displayName, string displayUnits)
 		{
-			var key = $"system:runtime:{name.Replace('-', '_')}";
+			if (m_Gauges.ContainsKey(name))
+				return m_Gauges[name];
 
-			if (m_Gauges.ContainsKey(key))
-				return m_Gauges[key];
-
-			var gauge = m_MetricFactory.CreateGauge(key, displayName);
-			m_Gauges.Add(key, gauge);
+			var gauge = m_MetricFactory.CreateGauge(name, displayName);
+			m_Gauges.Add(name, gauge);
 
 			return gauge;
 		}
@@ -90,7 +96,10 @@ namespace WebMonitor
 					}
 					else if (payloadFields["CounterType"].Equals("Sum"))
 					{
-						value = (double)payloadFields["Increment"];
+						var intervalSec = (float)payloadFields["IntervalSec"];
+						var increment = (double)payloadFields["Increment"];
+						value = increment / intervalSec;
+
 						if (string.IsNullOrEmpty(displayUnits))
 						{
 							displayUnits = "count";
@@ -98,7 +107,8 @@ namespace WebMonitor
 						displayUnits += "/sec";
 					}
 
-					var gauge = GetGauge(counterName, displayName, displayUnits);
+					var gaugeName = $"{obj.ProviderName.Replace('.', ':')}:{counterName.Replace('-', '_')}";
+					var gauge = GetGauge(gaugeName, displayName, displayUnits);
 
 					gauge.Set(value);
 				}
