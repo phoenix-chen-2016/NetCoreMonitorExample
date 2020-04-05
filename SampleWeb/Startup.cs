@@ -26,6 +26,10 @@ namespace SampleWeb
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddControllers();
+
+			services.AddSingleton<SampleEventSource>();
+
+			services.AddHostedService<SampleEventHostedService>();
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
